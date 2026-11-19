@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import os
 from flask import Flask
 from threading import Thread
@@ -20,6 +21,7 @@ bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
     print(f'{bot.user} is online!')
 
 @bot.command()
@@ -100,5 +102,13 @@ async def on_message(message):
         embed.set_footer(text=f"Detected | {message.author.display_name}")
         await message.channel.send(embed=embed)
     await bot.process_commands(message)
-
+@bot.tree.command(name="m-disappear", description="Make messages disappear in this channel")
+@app_commands.describe(amount="How many messages to delete (max 100)")
+async def m_disappear(interaction: discord.Interaction, amount: int = 50):
+    if interaction.user.id != 1491619960869490810:
+        await interaction.response.send_message("Nope, only the owner can use this.", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    deleted = await interaction.channel.purge(limit=amount)
+    await interaction.followup.send(f"Poof! Deleted {len(deleted)} messages.", ephemeral=True)
 bot.run(os.getenv('DISCORD_TOKEN'))
